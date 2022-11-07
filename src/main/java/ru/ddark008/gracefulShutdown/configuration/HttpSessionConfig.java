@@ -42,33 +42,27 @@ public class HttpSessionConfig {
         return new HttpSessionListener() {
             @Override
             public void sessionCreated(HttpSessionEvent hse) {
-                try {
-                    shutdownLock.readLock().lock();
                     int count = activeSessions.incrementAndGet();
                     log.info("New session: {}, now is {}", hse.getSession().getId(), count);
-                } finally {
-                    shutdownLock.readLock().unlock();
-                }
             }
 
             @Override
             public void sessionDestroyed(HttpSessionEvent hse) {
-                try {
-                    shutdownLock.readLock().lock();
                     if (shutdownLatch != null) {
                         shutdownLatch.countDown();
                         log.info("Latch -1 now: {}", shutdownLatch.getCount());
                     }
                     int count = activeSessions.decrementAndGet();
                     log.info("Close session: {}, all {}", hse.getSession().getId(), count);
-                } finally {
-                    shutdownLock.readLock().unlock();
-                }
             }
         };
     }
 
     public boolean isShutdown() {
         return isShutdown.get();
+    }
+
+    public ReentrantReadWriteLock.ReadLock getShutdownReadLock(){
+        return shutdownLock.readLock();
     }
 }

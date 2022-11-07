@@ -18,23 +18,39 @@ public class PingController {
     HttpSessionConfig sessionConfig;
 
     @GetMapping("/ping")
-    public ResponseEntity ping(HttpServletRequest request) {
-        if (sessionConfig.isShutdown()) {
-            log.info("Ping 503");
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
+    public ResponseEntity<Object> ping(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+
+        try {
+            sessionConfig.getShutdownReadLock().lock();
+
+            if (sessionConfig.isShutdown()) {
+                log.info("Ping 503");
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
+            }
+
+            if (session == null) {
+                log.info("Unable to find session. Creating a new session");
+                session = request.getSession(true);
+            }
+
+        } finally {
+            sessionConfig.getShutdownReadLock().unlock();
         }
 
-        HttpSession session = request.getSession(false);
-        if (session == null) {
-            log.info("Unable to find session. Creating a new session");
-            session = request.getSession(true);
-        }
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        session.invalidate();
+
+        try {
+            sessionConfig.getShutdownReadLock().lock();
+            session.invalidate();
+        } finally {
+            sessionConfig.getShutdownReadLock().unlock();
+        }
+
         return ResponseEntity.ok().build();
     }
 }
