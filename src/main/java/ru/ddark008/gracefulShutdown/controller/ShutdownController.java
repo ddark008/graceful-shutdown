@@ -5,19 +5,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.ddark008.gracefulShutdown.configuration.HttpSessionConfig;
+import ru.ddark008.gracefulShutdown.service.SessionService;
 
 @Slf4j
 @RestController
 public class ShutdownController {
     @Autowired
-    HttpSessionConfig sessionConfig;
+    SessionService service;
 
     @PostMapping("/shutdown")
-    public ResponseEntity<Object> shutdown(){
+    public ResponseEntity<Object> shutdown() {
         log.info("Shutdown start");
         try {
-            sessionConfig.initShutdown().await();
+            service.initShutdown().await();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
