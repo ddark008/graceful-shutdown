@@ -35,6 +35,13 @@ class ShutdownControllerTest {
         executorService.awaitTermination(15, TimeUnit.SECONDS);
     }
 
+    @Test
+    void shutdownOnly() throws Exception {
+        executorService.submit(getShutdownWithDelay(1000, HttpStatus.OK));
+        // Чтобы тест не завершился раньше запросов
+        executorService.awaitTermination(15, TimeUnit.SECONDS);
+    }
+
     private Runnable getPingWithDelay(long delay_ms, HttpStatus status) {
         return () -> {
             try {
